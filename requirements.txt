@@ -1,4 +1,9 @@
 fastapi
 uvicorn[standard]
+
 redis
+
 pydantic
+email-validator
+
+sib-api-v3-sdk
