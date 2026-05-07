@@ -11,12 +11,18 @@ from app.services.auth_service import (
     create_user,
     verify_user,
     authenticate_user,
-    generate_token
+    generate_token,
+    fake_users
 )
 
 from app.services.mfa_service import (
     generate_code,
     verify_code
+)
+
+from app.utils.cryptography import (
+    encrypt_email,
+    decrypt_email
 )
 
 from app.utils.email import send_confirmation_email
@@ -106,4 +112,31 @@ def verify_login(data: VerifyLoginRequest):
     return {
         "message": "Login realizado",
         "token": token
+    }
+
+@router.get("/users")
+def list_users():
+    return fake_users
+
+
+
+@router.get("/demo-encryption")
+def demo_encryption():
+
+    users = []
+
+    for encrypted_email, user_data in fake_users.items():
+
+        decrypted_email = decrypt_email(encrypted_email)
+
+        users.append({
+            "original_email": decrypted_email,
+            "encrypted_email": encrypted_email,
+            "password_hash": user_data["password"],
+            "verified": user_data["verified"]
+        })
+
+    return {
+        "total_users": len(users),
+        "users": users
     }
