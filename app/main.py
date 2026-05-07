@@ -2,8 +2,13 @@ from fastapi import FastAPI
 import redis
 import os
 import random
+from app.middlewares.rate_limit import RateLimitMiddleware
+
+
+from app.controllers.auth_controller import auth_controller
 
 app = FastAPI()
+app.add_middleware(RateLimitMiddleware)
 
 redis_client = redis.Redis(
     host=os.getenv("REDIS_HOST", "localhost"),
@@ -11,22 +16,12 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
+app.include_router(
+    auth_controller.router,
+    prefix="/auth",
+    tags=["Auth"],
+)
+
 @app.get("/")
 def root():
     return {"status": "ok"}
-
-@app.post("/generate-code/{user_id}")
-def generate_code(user_id: str):
-    code = str(random.randint(100000, 999999))
-    redis_client.setex(f"mfa:{user_id}", 900, code)  # expira em 5 min
-    return {"code": code}
-
-@app.post("/verify-code/{user_id}/{code}")
-def verify_code(user_id: str, code: str):
-    stored = redis_client.get(f"mfa:{user_id}")
-    
-    if stored == code:
-        redis_client.delete(f"mfa:{user_id}")
-        return {"valid": True}
-    
-    return {"valid": False}
